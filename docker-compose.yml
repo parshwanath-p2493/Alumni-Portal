@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: almaniportal-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: alumni_ete_new
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - almaniportal-network
+
+  backend:
+    build: .
+    container_name: almaniportal-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/alumni_ete_new?authSource=admin
+      - DB_NAME=alumni_ete_new
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRATION=24h
+      - REFRESH_EXPIRATION=168h
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USERNAME=your-email@gmail.com
+      - SMTP_PASSWORD=your-app-password
+      - SMTP_FROM=noreply@almaniportal.com
+      - RATE_LIMIT_LOGIN=5
+      - RATE_LIMIT_REGISTER=3
+      - RATE_LIMIT_REFRESH=10
+      - RATE_LIMIT_WINDOW=1m
+      - MAX_FILE_SIZE=5242880
+      - FRONTEND_URL=http://localhost:3000
+      - ENVIRONMENT=production
+    depends_on:
+      - mongodb
+    networks:
+      - almaniportal-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: almaniportal-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+    networks:
+      - almaniportal-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  almaniportal-network:
+    driver: bridge
