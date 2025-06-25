@@ -201,6 +201,7 @@ export default function DashboardPage() {
           { label: "Browse Jobs", href: "/jobs", icon: Briefcase, color: "bg-green-500" },
           { label: "Find Alumni", href: "/users/getusers", icon: Users, color: "bg-purple-500" },
           { label: "View Events", href: "/events", icon: Calendar, color: "bg-orange-500" },
+          { label: "View Gallery", href: "/gallery/items", icon: ImageIcon },
         ]
       case "alumni":
         return [
@@ -208,6 +209,7 @@ export default function DashboardPage() {
           { label: "View Students", href: "/users/getusers", icon: Users, color: "bg-blue-500" },
           { label: "Browse Projects", href: "/projects/projectview", icon: GraduationCap, color: "bg-purple-500" },
           { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
+         { label: "View Gallery", href: "/gallery/items", icon: ImageIcon },
         ]
       case "faculty":
         return [
@@ -215,6 +217,7 @@ export default function DashboardPage() {
           { label: "View Students", href: "/users/getusers", icon: Users, color: "bg-blue-500" },
           { label: "Browse Projects", href: "/projects/projectview", icon: GraduationCap, color: "bg-purple-500" },
           { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
+           { label: "View Gallery", href: "/gallery/items", icon: ImageIcon },
         ]
       default:
         return []
@@ -310,7 +313,7 @@ export default function DashboardPage() {
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/users/getusers">
+                    <Link href="/users/updateprofile">
                       <Settings className="w-4 h-4 mr-2" />
                       Profile Settings
                     </Link>

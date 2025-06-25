@@ -232,7 +232,7 @@ export const api = {
 
   // Notification endpoints
   notifications: {
-    getAll: () => fetchWithAuth("/notifications"),
+    getAll: (params = {}) => fetchWithAuth("/notifications/inbox?" + new URLSearchParams(params as any).toString()),
     markAsRead: (id: string) =>
       fetchWithAuth(`/notifications/${id}/read`, {
         method: "PUT",
