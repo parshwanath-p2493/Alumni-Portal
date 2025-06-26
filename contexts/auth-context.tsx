@@ -331,6 +331,7 @@
 //   }
 //   return context
 // }
+
 "use client"
 
 import type React from "react"
@@ -366,7 +367,14 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
-  ) => Promise<{ success: boolean; requiresOTP?: boolean; message?: string; user?: User; token?: string }>
+  ) => Promise<{
+    success: boolean
+    requiresOTP?: boolean
+    message?: string
+    user?: User
+    token?: string
+    redirectPath?: string
+  }>
   register: (userData: any) => Promise<{ success: boolean; message?: string }>
   verifyOTP: (email: string, otp: string) => Promise<{ success: boolean; message?: string }>
   logout: () => void
@@ -516,6 +524,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadUser()
   }, [])
 
+  const getRedirectPath = (role: string) => {
+    switch (role) {
+      case "admin":
+        return "/admin"
+      case "student":
+      case "alumni":
+      case "faculty":
+      default:
+        return "/dashboard"
+    }
+  }
+
   const login = async (email: string, password: string) => {
     try {
       console.log("🔐 Auth context login called with:", { email })
@@ -563,7 +583,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         console.log("🎯 Auth state updated - token:", !!token, "user:", !!userData)
 
-        return { success: true, message: data.message, user: userData, token }
+        return {
+          success: true,
+          message: data.message,
+          user: userData,
+          token,
+          redirectPath: getRedirectPath(userData.role),
+        }
       }
       // Handle case where user needs OTP verification
       else if (data.message && data.message.includes("verify")) {
