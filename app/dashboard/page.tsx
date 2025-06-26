@@ -197,27 +197,35 @@ export default function DashboardPage() {
     switch (user.role) {
       case "student":
         return [
-          { label: "Post Project", href: "/projects/addproject", icon: Plus, color: "bg-blue-500" },
-          { label: "Browse Jobs", href: "/jobs", icon: Briefcase, color: "bg-green-500" },
-          { label: "Find Alumni", href: "/users/getusers", icon: Users, color: "bg-purple-500" },
+          { label: "Post Project", href: "/projects/new", icon: Plus, color: "bg-green-500" },
+          { label: "Browse Jobs", href: "/jobs", icon: Briefcase, color: "bg-blue-500" },
+          { label: "Find Alumni", href: "/users", icon: Users, color: "bg-purple-500" },
+          { label: "View Gallery", href: "/gallery", icon: ImageIcon, color: "bg-teal-500" },
+          { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
           { label: "View Events", href: "/events", icon: Calendar, color: "bg-orange-500" },
-          { label: "View Gallery", href: "/gallery/items", icon: ImageIcon },
         ]
       case "alumni":
         return [
-          { label: "Post Job", href: "/jobs/add", icon: Plus, color: "bg-green-500" },
-          { label: "View Students", href: "/users/getusers", icon: Users, color: "bg-blue-500" },
-          { label: "Browse Projects", href: "/projects/projectview", icon: GraduationCap, color: "bg-purple-500" },
+          // { label: "Post Job", href: "/jobs/add", icon: Plus, color: "bg-green-500" },
+          // { label: "View Students", href: "/users", icon: Users, color: "bg-blue-500" },
+          // { label: "Browse Projects", href: "/projects/projectview", icon: GraduationCap, color: "bg-purple-500" },
+          // { label: "View Gallery", href: "/gallery", icon: ImageIcon, color: "bg-teal-500" },
+          
+          { label: "Post Job", href: "/jobs/new", icon: Plus, color: "bg-green-500" },
+          { label: "View Students", href: "/users", icon: Users, color: "bg-blue-500" },
+          { label: "Browse Projects", href: "/projects", icon: GraduationCap, color: "bg-purple-500" },
           { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
-         { label: "View Gallery", href: "/gallery/items", icon: ImageIcon },
+          { label: "View Events", href: "/events", icon: Calendar, color: "bg-orange-500" },
+          { label: "View Gallery", href: "/gallery", icon: ImageIcon, color: "bg-teal-500" },
         ]
       case "faculty":
         return [
           { label: "Upload Photos", href: "/gallery/upload", icon: Plus, color: "bg-green-500" },
-          { label: "View Students", href: "/users/getusers", icon: Users, color: "bg-blue-500" },
-          { label: "Browse Projects", href: "/projects/projectview", icon: GraduationCap, color: "bg-purple-500" },
-          { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
-           { label: "View Gallery", href: "/gallery/items", icon: ImageIcon },
+          { label: "View Students", href: "/users", icon: Users, color: "bg-blue-500" },
+          { label: "Browse Projects", href: "/projects", icon: GraduationCap, color: "bg-purple-500" },
+         // { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
+          { label: "View Events", href: "/events", icon: Calendar, color: "bg-orange-500" },
+          { label: "View Gallery", href: "/gallery", icon: ImageIcon, color: "bg-teal-500" },
         ]
       default:
         return []

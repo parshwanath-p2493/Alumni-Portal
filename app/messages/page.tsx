@@ -202,6 +202,16 @@ export default function MessagesPage() {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !activeConversation || !user) return
 
+    // Validate message length according to backend (1-5000 characters)
+    if (newMessage.trim().length > 5000) {
+      toast({
+        title: "Message too long",
+        description: "Message must be 5000 characters or less.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSending(true)
 
     try {
@@ -460,18 +470,23 @@ export default function MessagesPage() {
 
               {/* Message Input */}
               <div className="p-4 border-t bg-white">
-                <div className="flex space-x-2">
-                  <Input
-                    placeholder="Type a message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="flex-1"
-                    disabled={isSending}
-                  />
-                  <Button onClick={handleSendMessage} disabled={isSending || !newMessage.trim()}>
-                    <Send className="h-4 w-4" />
-                  </Button>
+                <div className="space-y-2">
+                  <div className="flex space-x-2">
+                    <Input
+                      placeholder="Type a message... (max 5000 characters)"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      className="flex-1"
+                      disabled={isSending}
+                    />
+                    <Button onClick={handleSendMessage} disabled={isSending || !newMessage.trim()}>
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {newMessage.length > 0 && (
+                    <div className="text-xs text-gray-500 text-right">{newMessage.length}/5000 characters</div>
+                  )}
                 </div>
               </div>
             </>

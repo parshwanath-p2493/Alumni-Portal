@@ -141,7 +141,6 @@
 //     </div>
 //   )
 // }
-
 "use client"
 
 import type React from "react"
@@ -198,12 +197,21 @@ export default function LoginPage() {
         setSuccess(true)
         setError("")
 
-        // Immediate redirect without waiting for auth state
-        console.log("🎯 Redirecting immediately to dashboard...")
+        // Role-based redirect
+        const userRole = result.user?.role
+        let redirectPath = "/dashboard"
+
+        if (userRole === "admin") {
+          redirectPath = "/admin"
+        } else {
+          redirectPath = "/dashboard"
+        }
+
+        console.log(`🎯 Redirecting ${userRole} to ${redirectPath}...`)
 
         // Use window.location for immediate redirect
         setTimeout(() => {
-          window.location.href = "/dashboard"
+          window.location.href = redirectPath
         }, 500)
       } else if (result.requiresOTP) {
         console.log("📧 OTP verification required")

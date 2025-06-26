@@ -216,19 +216,25 @@ export const api = {
   },
 
   // Message endpoints
-  messages: {
+    messages: {
     getConversations: () => fetchWithAuth("/messages/message"),
     sendMessage: (recipientId: string, content: string, subject?: string) =>
       fetchWithAuth("/messages/sendmessage", {
         method: "POST",
-        body: JSON.stringify({ recipient_id: recipientId, content, subject }),
+        body: JSON.stringify({
+          recipient_id: recipientId,
+          content: content,
+          subject: subject || "",
+        }),
       }),
-    getMessages: (id: string) => fetchWithAuth(`/messages/${id}`),
-    markAsRead: (id: string) =>
-      fetchWithAuth(`/messages/${id}/read`, {
+    getMessages: (participantId: string, params = {}) =>
+      fetchWithAuth(`/messages/${participantId}?` + new URLSearchParams(params as any).toString()),
+    markAsRead: (messageId: string) =>
+      fetchWithAuth(`/messages/${messageId}/read`, {
         method: "PUT",
       }),
   },
+
 
   // Notification endpoints
   notifications: {

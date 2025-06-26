@@ -11,28 +11,33 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { api } from "@/services/api"
+import { ArrowLeft, Plus, X, Briefcase } from "lucide-react"
+import api from "@/services/api"
 import { toast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
-import { ArrowLeft, Plus, X, Briefcase, Building, MapPin, DollarSign, Clock } from "lucide-react"
+
+const JOB_TYPES = [
+  { value: "full-time", label: "Full Time" },
+  { value: "part-time", label: "Part Time" },
+  { value: "internship", label: "Internship" },
+  { value: "contract", label: "Contract" },
+]
 
 export default function NewJobPage() {
   const { user } = useAuth()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [skillInput, setSkillInput] = useState("")
+  const [requirementInput, setRequirementInput] = useState("")
   const [formData, setFormData] = useState({
     title: "",
     company: "",
     location: "",
     job_type: "",
-    experience_level: "",
+    experience_required: "",
     salary_range: "",
     description: "",
     requirements: [] as string[],
-    application_url: "",
-    application_email: "",
-    deadline: "",
+    expires_at: "",
   })
 
   const handleInputChange = (field: string, value: string) => {
@@ -40,12 +45,12 @@ export default function NewJobPage() {
   }
 
   const addRequirement = () => {
-    if (skillInput.trim() && !formData.requirements.includes(skillInput.trim())) {
+    if (requirementInput.trim() && !formData.requirements.includes(requirementInput.trim())) {
       setFormData((prev) => ({
         ...prev,
-        requirements: [...prev.requirements, skillInput.trim()],
+        requirements: [...prev.requirements, requirementInput.trim()],
       }))
-      setSkillInput("")
+      setRequirementInput("")
     }
   }
 
@@ -67,10 +72,54 @@ export default function NewJobPage() {
     e.preventDefault()
     setIsLoading(true)
 
+    // Validate according to backend validation rules
+    const errors: string[] = []
+
+    if (!formData.title || formData.title.length < 5 || formData.title.length > 200) {
+      errors.push("Title must be between 5 and 200 characters")
+    }
+
+    if (!formData.company || formData.company.length < 2 || formData.company.length > 100) {
+      errors.push("Company must be between 2 and 100 characters")
+    }
+
+    if (!formData.location || formData.location.length < 2 || formData.location.length > 100) {
+      errors.push("Location must be between 2 and 100 characters")
+    }
+
+    if (!formData.job_type || !["full-time", "part-time", "internship", "contract"].includes(formData.job_type)) {
+      errors.push("Please select a valid job type")
+    }
+
+    if (!formData.description || formData.description.length < 50 || formData.description.length > 3000) {
+      errors.push("Description must be between 50 and 3000 characters")
+    }
+
+    if (formData.requirements.length === 0) {
+      errors.push("At least one requirement is needed")
+    }
+
+    if (errors.length > 0) {
+      toast({
+        title: "Validation Error",
+        description: errors.join(". "),
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
     try {
       const jobData = {
-        ...formData,
-        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : undefined,
+        title: formData.title,
+        company: formData.company,
+        location: formData.location,
+        job_type: formData.job_type,
+        experience_required: formData.experience_required,
+        salary_range: formData.salary_range,
+        description: formData.description,
+        requirements: formData.requirements,
+        expires_at: formData.expires_at ? new Date(formData.expires_at).toISOString() : undefined,
       }
 
       await api.jobs.create(jobData)
@@ -85,7 +134,7 @@ export default function NewJobPage() {
       console.error("Failed to create job:", error)
       toast({
         title: "Error",
-        description: "Failed to post job. Please try again.",
+        description: "Failed to create job posting. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -93,8 +142,8 @@ export default function NewJobPage() {
     }
   }
 
-  // Check if user can post jobs
-  const canPostJobs = user?.role === "alumni" || user?.role === "faculty"
+  // Check if user can post jobs (only alumni)
+  const canPostJobs = user?.role === "alumni"
 
   if (!canPostJobs) {
     return (
@@ -104,7 +153,7 @@ export default function NewJobPage() {
             <Briefcase className="w-12 h-12 text-red-500" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Access Denied</h3>
-          <p className="text-gray-600 mb-4">Only alumni and faculty members can post job opportunities.</p>
+          <p className="text-gray-600 mb-4">Only alumni can post job opportunities.</p>
           <Button onClick={() => router.push("/jobs")}>Back to Jobs</Button>
         </div>
       </div>
@@ -121,7 +170,7 @@ export default function NewJobPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Post New Job</h1>
-          <p className="text-gray-600">Create a job opportunity for ETE students</p>
+          <p className="text-gray-600">Share job opportunities with ETE students</p>
         </div>
       </div>
 
@@ -130,72 +179,48 @@ export default function NewJobPage() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Job Details</CardTitle>
-            <CardDescription>Fill in the information about the job opportunity</CardDescription>
+            <CardDescription>Provide comprehensive information about the position</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Basic Information</h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="title">Job Title *</Label>
-                    <div className="relative">
-                      <Briefcase className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="title"
-                        value={formData.title}
-                        onChange={(e) => handleInputChange("title", e.target.value)}
-                        className="pl-10"
-                        placeholder="e.g., Software Engineer"
-                        required
-                      />
-                    </div>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => handleInputChange("title", e.target.value)}
+                      placeholder="e.g., Software Engineer"
+                      required
+                    />
+                    <p className="text-xs text-gray-500">5-200 characters</p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="company">Company *</Label>
-                    <div className="relative">
-                      <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="company"
-                        value={formData.company}
-                        onChange={(e) => handleInputChange("company", e.target.value)}
-                        className="pl-10"
-                        placeholder="e.g., TechCorp Solutions"
-                        required
-                      />
-                    </div>
+                    <Input
+                      id="company"
+                      value={formData.company}
+                      onChange={(e) => handleInputChange("company", e.target.value)}
+                      placeholder="e.g., Tech Corp"
+                      required
+                    />
+                    <p className="text-xs text-gray-500">2-100 characters</p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="location">Location *</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="location"
-                        value={formData.location}
-                        onChange={(e) => handleInputChange("location", e.target.value)}
-                        className="pl-10"
-                        placeholder="e.g., Bangalore, Karnataka"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="salary_range">Salary Range</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="salary_range"
-                        value={formData.salary_range}
-                        onChange={(e) => handleInputChange("salary_range", e.target.value)}
-                        className="pl-10"
-                        placeholder="e.g., ₹6-10 LPA"
-                      />
-                    </div>
+                    <Input
+                      id="location"
+                      value={formData.location}
+                      onChange={(e) => handleInputChange("location", e.target.value)}
+                      placeholder="e.g., Bangalore, India"
+                      required
+                    />
+                    <p className="text-xs text-gray-500">2-100 characters</p>
                   </div>
 
                   <div className="space-y-2">
@@ -205,44 +230,32 @@ export default function NewJobPage() {
                         <SelectValue placeholder="Select job type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="full-time">Full-time</SelectItem>
-                        <SelectItem value="part-time">Part-time</SelectItem>
-                        <SelectItem value="internship">Internship</SelectItem>
-                        <SelectItem value="contract">Contract</SelectItem>
-                        <SelectItem value="remote">Remote</SelectItem>
+                        {JOB_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="experience_level">Experience Level *</Label>
-                    <Select
-                      value={formData.experience_level}
-                      onValueChange={(value) => handleInputChange("experience_level", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select experience level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="entry">Entry Level (0-1 years)</SelectItem>
-                        <SelectItem value="junior">Junior (1-3 years)</SelectItem>
-                        <SelectItem value="mid">Mid Level (3-5 years)</SelectItem>
-                        <SelectItem value="senior">Senior (5+ years)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="deadline">Application Deadline</Label>
-                  <div className="relative">
-                    <Clock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Label htmlFor="experience_required">Experience Required</Label>
                     <Input
-                      id="deadline"
-                      type="date"
-                      value={formData.deadline}
-                      onChange={(e) => handleInputChange("deadline", e.target.value)}
-                      className="pl-10"
+                      id="experience_required"
+                      value={formData.experience_required}
+                      onChange={(e) => handleInputChange("experience_required", e.target.value)}
+                      placeholder="e.g., 2-3 years"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="salary_range">Salary Range</Label>
+                    <Input
+                      id="salary_range"
+                      value={formData.salary_range}
+                      onChange={(e) => handleInputChange("salary_range", e.target.value)}
+                      placeholder="e.g., ₹8-12 LPA"
                     />
                   </div>
                 </div>
@@ -261,21 +274,25 @@ export default function NewJobPage() {
                     rows={6}
                     required
                   />
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>50-3000 characters required</span>
+                    <span>{formData.description.length}/3000</span>
+                  </div>
                 </div>
               </div>
 
               {/* Requirements */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Requirements & Skills</h3>
+                <h3 className="text-lg font-semibold">Requirements</h3>
                 <div className="space-y-2">
-                  <Label htmlFor="requirements">Add Requirements</Label>
+                  <Label htmlFor="requirements">Add Requirements *</Label>
                   <div className="flex space-x-2">
                     <Input
                       id="requirements"
-                      value={skillInput}
-                      onChange={(e) => setSkillInput(e.target.value)}
+                      value={requirementInput}
+                      onChange={(e) => setRequirementInput(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="e.g., React.js, Python, etc."
+                      placeholder="e.g., Bachelor's in Computer Science"
                     />
                     <Button type="button" onClick={addRequirement} size="sm">
                       <Plus className="w-4 h-4" />
@@ -283,42 +300,30 @@ export default function NewJobPage() {
                   </div>
                   {formData.requirements.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {formData.requirements.map((requirement, index) => (
+                      {formData.requirements.map((req, index) => (
                         <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                          {requirement}
-                          <X className="w-3 h-3 cursor-pointer" onClick={() => removeRequirement(requirement)} />
+                          {req}
+                          <X className="w-3 h-3 cursor-pointer" onClick={() => removeRequirement(req)} />
                         </Badge>
                       ))}
                     </div>
                   )}
+                  <p className="text-xs text-gray-500">At least one requirement is needed</p>
                 </div>
               </div>
 
-              {/* Application Details */}
+              {/* Expiry Date */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Application Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="application_email">Application Email</Label>
-                    <Input
-                      id="application_email"
-                      type="email"
-                      value={formData.application_email}
-                      onChange={(e) => handleInputChange("application_email", e.target.value)}
-                      placeholder="hr@company.com"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="application_url">Application URL</Label>
-                    <Input
-                      id="application_url"
-                      type="url"
-                      value={formData.application_url}
-                      onChange={(e) => handleInputChange("application_url", e.target.value)}
-                      placeholder="https://company.com/careers/apply"
-                    />
-                  </div>
+                <h3 className="text-lg font-semibold">Additional Settings</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="expires_at">Expiry Date (Optional)</Label>
+                  <Input
+                    id="expires_at"
+                    type="datetime-local"
+                    value={formData.expires_at}
+                    onChange={(e) => handleInputChange("expires_at", e.target.value)}
+                  />
+                  <p className="text-xs text-gray-500">Leave empty for no expiry</p>
                 </div>
               </div>
 
@@ -350,56 +355,48 @@ export default function NewJobPage() {
               <div>
                 <h3 className="font-semibold text-lg">{formData.title || "Job Title"}</h3>
                 <p className="text-gray-600">{formData.company || "Company Name"}</p>
+                <p className="text-sm text-gray-500">{formData.location || "Location"}</p>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                {formData.job_type && <Badge>{formData.job_type}</Badge>}
-                {formData.experience_level && <Badge variant="outline">{formData.experience_level}</Badge>}
-              </div>
+              {formData.job_type && (
+                <Badge variant="outline">{JOB_TYPES.find((t) => t.value === formData.job_type)?.label}</Badge>
+              )}
 
-              <div className="space-y-2 text-sm">
-                {formData.location && (
-                  <div className="flex items-center">
-                    <MapPin className="w-4 h-4 mr-2 text-gray-500" />
-                    {formData.location}
-                  </div>
-                )}
-                {formData.salary_range && (
-                  <div className="flex items-center">
-                    <DollarSign className="w-4 h-4 mr-2 text-gray-500" />
-                    {formData.salary_range}
-                  </div>
-                )}
-                {formData.deadline && (
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-2 text-gray-500" />
-                    Apply by {new Date(formData.deadline).toLocaleDateString()}
-                  </div>
-                )}
-              </div>
+              {formData.salary_range && (
+                <div>
+                  <h4 className="font-medium">Salary</h4>
+                  <p className="text-sm text-gray-700">{formData.salary_range}</p>
+                </div>
+              )}
+
+              {formData.experience_required && (
+                <div>
+                  <h4 className="font-medium">Experience</h4>
+                  <p className="text-sm text-gray-700">{formData.experience_required}</p>
+                </div>
+              )}
 
               {formData.description && (
                 <div>
-                  <h4 className="font-medium mb-2">Description</h4>
-                  <p className="text-sm text-gray-700 line-clamp-4">{formData.description}</p>
+                  <h4 className="font-medium">Description</h4>
+                  <p className="text-sm text-gray-700 line-clamp-3">{formData.description}</p>
                 </div>
               )}
 
               {formData.requirements.length > 0 && (
                 <div>
                   <h4 className="font-medium mb-2">Requirements</h4>
-                  <div className="flex flex-wrap gap-1">
+                  <ul className="text-sm text-gray-700 space-y-1">
                     {formData.requirements.slice(0, 3).map((req, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
+                      <li key={index} className="flex items-start">
+                        <span className="w-1 h-1 bg-gray-400 rounded-full mt-2 mr-2 flex-shrink-0"></span>
                         {req}
-                      </Badge>
+                      </li>
                     ))}
                     {formData.requirements.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{formData.requirements.length - 3} more
-                      </Badge>
+                      <li className="text-gray-500">+{formData.requirements.length - 3} more...</li>
                     )}
-                  </div>
+                  </ul>
                 </div>
               )}
             </div>

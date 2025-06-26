@@ -28,9 +28,6 @@ export default function NewProjectPage() {
     technologies: [] as string[],
     github_url: "",
     demo_url: "",
-    features: "",
-    challenges: "",
-    future_scope: "",
   })
 
   const handleInputChange = (field: string, value: string) => {
@@ -64,6 +61,25 @@ export default function NewProjectPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+
+    // Validate required fields
+    if (!formData.title || !formData.description || !formData.project_type) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (formData.technologies.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please add at least one technology.",
+        variant: "destructive",
+      })
+      return
+    }
 
     try {
       await api.projects.create(formData)
@@ -153,11 +169,8 @@ export default function NewProjectPage() {
                         <SelectValue placeholder="Select project type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Major Project">Major Project</SelectItem>
-                        <SelectItem value="Mini Project">Mini Project</SelectItem>
-                        <SelectItem value="Research Project">Research Project</SelectItem>
-                        <SelectItem value="Personal Project">Personal Project</SelectItem>
-                        <SelectItem value="Hackathon Project">Hackathon Project</SelectItem>
+                        <SelectItem value="mini">Mini Project</SelectItem>
+                        <SelectItem value="major">Major Project</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -238,46 +251,6 @@ export default function NewProjectPage() {
                         placeholder="https://your-project-demo.com"
                       />
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Details */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Additional Details</h3>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="features">Key Features</Label>
-                    <Textarea
-                      id="features"
-                      value={formData.features}
-                      onChange={(e) => handleInputChange("features", e.target.value)}
-                      placeholder="List the main features of your project..."
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="challenges">Challenges Faced</Label>
-                    <Textarea
-                      id="challenges"
-                      value={formData.challenges}
-                      onChange={(e) => handleInputChange("challenges", e.target.value)}
-                      placeholder="What challenges did you face and how did you overcome them?"
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="future_scope">Future Scope</Label>
-                    <Textarea
-                      id="future_scope"
-                      value={formData.future_scope}
-                      onChange={(e) => handleInputChange("future_scope", e.target.value)}
-                      placeholder="What improvements or features could be added in the future?"
-                      rows={3}
-                    />
                   </div>
                 </div>
               </div>
