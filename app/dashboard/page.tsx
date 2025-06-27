@@ -65,6 +65,12 @@ export default function DashboardPage() {
     isAuthenticated,
     authLoading,
   })
+  // Redirect admin users to admin panel
+  useEffect(() => {
+    if (isAuthenticated && user?.role === "admin") {
+      router.push("/admin")
+    }
+  }, [isAuthenticated, user, router])
 
   // FIXED: Proper authentication check
   useEffect(() => {
@@ -79,7 +85,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!user) return
+     if (!user || user.role === "admin") return
 
       try {
         setIsLoading(true)
@@ -210,7 +216,7 @@ export default function DashboardPage() {
           // { label: "View Students", href: "/users", icon: Users, color: "bg-blue-500" },
           // { label: "Browse Projects", href: "/projects/projectview", icon: GraduationCap, color: "bg-purple-500" },
           // { label: "View Gallery", href: "/gallery", icon: ImageIcon, color: "bg-teal-500" },
-          
+
           { label: "Post Job", href: "/jobs/new", icon: Plus, color: "bg-green-500" },
           { label: "View Students", href: "/users", icon: Users, color: "bg-blue-500" },
           { label: "Browse Projects", href: "/projects", icon: GraduationCap, color: "bg-purple-500" },
@@ -223,7 +229,7 @@ export default function DashboardPage() {
           { label: "Upload Photos", href: "/gallery/upload", icon: Plus, color: "bg-green-500" },
           { label: "View Students", href: "/users", icon: Users, color: "bg-blue-500" },
           { label: "Browse Projects", href: "/projects", icon: GraduationCap, color: "bg-purple-500" },
-         // { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
+          // { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
           { label: "View Events", href: "/events", icon: Calendar, color: "bg-orange-500" },
           { label: "View Gallery", href: "/gallery", icon: ImageIcon, color: "bg-teal-500" },
         ]
