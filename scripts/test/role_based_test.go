@@ -12,49 +12,74 @@ import (
 )
 
 // Common structs
+
 type User struct {
-	Name           string `json:"name"`
-	Email          string `json:"email"`
-	Password       string `json:"password"`
-	Role           string `json:"role"`
-	GraduationYear int    `json:"graduation_year"`
+	Name           string   `json:"name"`
+	Email          string   `json:"email"`
+	Password       string   `json:"password"`
+	Role           string   `json:"role"`
+	Department     string   `json:"department,omitempty"`
+	Skills         []string `json:"skills,omitempty"`
+	StudentID      string   `json:"studentId,omitempty"`
+	GraduationYear int      `json:"graduationYear,omitempty"`
+	Company        string   `json:"company,omitempty"`
+	Position       string   `json:"position,omitempty"`
+	Experience     string   `json:"experience,omitempty"`
+	Specialization string   `json:"specialization,omitempty"`
 }
 
 type LoginResponse struct {
-	Message      string `json:"message"`
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	User         struct {
-		ID    string `json:"id"`
-		Name  string `json:"name"`
-		Email string `json:"email"`
-		Role  string `json:"role"`
-	} `json:"user"`
+	Data struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+		User         struct {
+			ID    string `json:"id"`
+			Name  string `json:"name"`
+			Email string `json:"email"`
+			Role  string `json:"role"`
+		} `json:"user"`
+	} `json:"data"`
+	Message string `json:"message"`
+	Error   bool   `json:"error"`
 }
 
-type Project struct {
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	TechStack   []string `json:"tech_stack"`
-	GitHubLink  string   `json:"github_link"`
-	ImageURL    string   `json:"image_url"`
-}
-
-type Job struct {
-	Title       string    `json:"title"`
-	Company     string    `json:"company"`
-	Description string    `json:"description"`
-	Location    string    `json:"location"`
-	Type        string    `json:"type"`
-	Salary      string    `json:"salary"`
-	Deadline    time.Time `json:"deadline"`
-	ImageURL    string    `json:"image_url"`
+type SendMessageRequest struct {
+	RecipientID string `json:"recipient_id" validate:"required"`
+	Subject     string `json:"subject,omitempty"`
+	Content     string `json:"content" validate:"required,min=1,max=5000"`
 }
 
 type Message struct {
-	To      string `json:"to"`
-	Subject string `json:"subject"`
-	Content string `json:"content"`
+	ID          string `json:"id"`
+	To          string `json:"to"`
+	From        string `json:"from"`
+	Subject     string `json:"subject"`
+	Content     string `json:"content"`
+	IsRead      bool   `json:"is_read"`
+	CreatedAt   string `json:"created_at"`
+	ParentMsgID string `json:"parent_message_id,omitempty"`
+}
+
+type Project struct {
+	Title        string   `json:"title"`
+	Description  string   `json:"description"`
+	Type         string   `json:"type"`
+	Technologies []string `json:"technologies"`
+	GitHubURL    string   `json:"githubUrl"`
+	ImageURL     string   `json:"image_url,omitempty"`
+}
+
+type Job struct {
+	Title        string    `json:"title"`
+	Company      string    `json:"company"`
+	Location     string    `json:"location"`
+	JobType      string    `json:"job_type"`
+	Experience   string    `json:"experience_required,omitempty"`
+	Salary       string    `json:"salary_range,omitempty"`
+	Description  string    `json:"description"`
+	Requirements []string  `json:"requirements"`
+	Deadline     time.Time `json:"expires_at"`
+	ImageURL     string    `json:"image_url,omitempty"`
 }
 
 type Gallery struct {
@@ -95,7 +120,8 @@ func makeRequest(t *testing.T, method, url string, token string, body interface{
 }
 func ensureUserExists(t *testing.T, baseURL string, user User) string {
 	// Try logging in with test password
-	token := login(t, baseURL, user.Email, "test123")
+	//token := login(t, baseURL, user.Email, "test123")
+	token := login(t, baseURL, user.Email, user.Password)
 	if token != "" {
 		t.Logf("ℹ️ User %s already exists, using existing credentials", user.Email)
 		return token
@@ -117,7 +143,9 @@ func ensureUserExists(t *testing.T, baseURL string, user User) string {
 	verifyEmail(t, baseURL, user.Email)
 
 	// Login again with test password
-	return login(t, baseURL, user.Email, "test123")
+	//return login(t, baseURL, user.Email, "Test123!")
+	return login(t, baseURL, user.Email, user.Password)
+
 }
 
 func login(t *testing.T, baseURL string, email, password string) string {
@@ -142,11 +170,11 @@ func login(t *testing.T, baseURL string, email, password string) string {
 		t.Fatalf("Failed to decode login response: %v", err)
 	}
 
-	if loginResp.AccessToken == "" {
+	if loginResp.Data.AccessToken == "" {
 		t.Fatalf("Access token is empty in response: %s", string(body))
 	}
 
-	return loginResp.AccessToken
+	return loginResp.Data.AccessToken
 }
 
 // Helper function to verify email
@@ -210,13 +238,13 @@ func TestStudentRole(t *testing.T) {
 	}
 	t.Log("✅ Forgot password request successful")
 
-	// Upload project
 	project := Project{
-		Title:       "Test Project",
-		Description: "Test Description",
-		TechStack:   []string{"Go", "MongoDB", "Fiber"},
-		GitHubLink:  "https://github.com/test/project",
-		ImageURL:    "https://example.com/project.jpg",
+		Title:        "Test Project",
+		Description:  "Test Description",
+		Type:         "personal", // if your Project model has Type field
+		Technologies: []string{"Go", "Fiber", "MongoDB"},
+		GitHubURL:    "https://github.com/test/project",
+		ImageURL:     "https://example.com/project.jpg",
 	}
 
 	//resp, err = makeRequest(t, "POST", baseURL+"/projects", token, project)
@@ -248,21 +276,23 @@ func TestStudentRole(t *testing.T) {
 
 	// Try to post job (should fail - unauthorized)
 	job := struct {
-		Title       string    `json:"title"`
-		Company     string    `json:"company"`
-		Description string    `json:"description"`
-		Location    string    `json:"location"`
-		Type        string    `json:"type"`
-		Salary      string    `json:"salary"`
-		Deadline    time.Time `json:"deadline"`
+		Title              string    `json:"title"`
+		Company            string    `json:"company"`
+		Description        string    `json:"description"`
+		Location           string    `json:"location"`
+		JobType            string    `json:"job_type"` // use string here (JobType is string alias)
+		ExperienceRequired string    `json:"experience_required,omitempty"`
+		SalaryRange        string    `json:"salary_range,omitempty"`
+		ExpiresAt          time.Time `json:"expires_at"`
 	}{
-		Title:       "Test Job",
-		Company:     "Test Company",
-		Description: "Test Description",
-		Location:    "Test Location",
-		Type:        "Full-time",
-		Salary:      "50k-60k",
-		Deadline:    time.Now().Add(7 * 24 * time.Hour),
+		Title:              "Test Job",
+		Company:            "Test Company",
+		Description:        "Test Description",
+		Location:           "Test Location",
+		JobType:            "full-time", // use one of the JobType constants values as string
+		ExperienceRequired: "2+ years",
+		SalaryRange:        "50k-60k",
+		ExpiresAt:          time.Now().Add(7 * 24 * time.Hour),
 	}
 
 	resp, err = makeRequest(t, "POST", baseURL+"/jobs/add", token, job)
@@ -276,6 +306,27 @@ func TestStudentRole(t *testing.T) {
 		t.Fatalf("Job posting should be forbidden: %s", string(body))
 	}
 	t.Log("✅ Job posting correctly forbidden for student")
+
+	var parsed LoginResponse
+	json.NewDecoder(resp.Body).Decode(&parsed)
+	recipientID := parsed.Data.User.ID
+	msg := SendMessageRequest{
+		RecipientID: recipientID,
+		Subject:     "Hello Alumni",
+		Content:     "Student here, just saying hi!",
+	}
+
+	resp, err = makeRequest(t, "POST", baseURL+"/messages/sendmessage", token, msg)
+	if err != nil {
+		t.Fatalf("Failed to send message: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("Student to Alumni message failed: %s", string(body))
+	}
+	t.Log("✅ Student to Alumni message sent successfully")
 }
 
 // Test Alumni Role
@@ -289,7 +340,7 @@ func TestAlumniRole(t *testing.T) {
 	alumni := User{
 		Name:           "Test Alumni",
 		Email:          "1da21et030.et@drait.edu.in",
-		Password:       "test1234A!",
+		Password:       "Test123!",
 		Role:           "alumni",
 		GraduationYear: time.Now().Year() - 1, // 1 year ago
 	}
@@ -370,6 +421,27 @@ func TestAlumniRole(t *testing.T) {
 		t.Fatalf("Gallery posting failed: %s", string(body))
 	}
 	t.Log("✅ Gallery posting successful")
+	var parsed LoginResponse
+	json.NewDecoder(resp.Body).Decode(&parsed)
+	recipientID := parsed.Data.User.ID
+
+	msg := SendMessageRequest{
+		RecipientID: recipientID,
+		Subject:     "From an Alumni",
+		Content:     "Great to hear from you!",
+	}
+
+	resp, err = makeRequest(t, "POST", baseURL+"/messages/sendmessage", token, msg)
+	if err != nil {
+		t.Fatalf("Failed to send message: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("Alumni to Student message failed: %s", string(body))
+	}
+	t.Log("✅ Alumni to Student message sent successfully")
 }
 
 // Test Faculty Role
@@ -410,7 +482,7 @@ func TestFacultyRole(t *testing.T) {
 	t.Log("✅ Faculty login successful")
 
 	// View student projects
-	resp, err = makeRequest(t, "GET", baseURL+"/projects", token, nil)
+	resp, err = makeRequest(t, "GET", baseURL+"/projects/projectview", token, nil)
 	if err != nil {
 		t.Fatalf("Failed to view projects: %v", err)
 	}
@@ -449,9 +521,16 @@ func TestAdminRole(t *testing.T) {
 	if baseURL == "" {
 		baseURL = "http://localhost:8080"
 	}
+	admin := User{
+		Name:     "Super Admin",
+		Email:    "admin@alumni-portal.com",
+		Password: "admin@eteportal2025",
+		Role:     "admin",
+	}
 
+	token := ensureUserExists(t, baseURL, admin)
 	// Login as admin
-	token := login(t, baseURL, "admin@alumni-portal.com", "admin123")
+	//token := login(t, baseURL, "admin@alumni-portal.com", "admin@eteportal2025")
 	t.Log("✅ Admin login successful")
 
 	// Get all users
@@ -492,7 +571,7 @@ func TestUnauthorizedAccess(t *testing.T) {
 	student := User{
 		Name:     "Test Student",
 		Email:    "thekingofmyqueenxyz143@gmail.com",
-		Password: "test123",
+		Password: "Test123!",
 		Role:     "student",
 	}
 
@@ -513,22 +592,15 @@ func TestUnauthorizedAccess(t *testing.T) {
 	t.Log("✅ Admin access correctly forbidden for student")
 
 	// Try to post job as student
-	job := struct {
-		Title       string    `json:"title"`
-		Company     string    `json:"company"`
-		Description string    `json:"description"`
-		Location    string    `json:"location"`
-		Type        string    `json:"type"`
-		Salary      string    `json:"salary"`
-		Deadline    time.Time `json:"deadline"`
-	}{
-		Title:       "Test Job",
-		Company:     "Test Company",
-		Description: "Test Description",
-		Location:    "Test Location",
-		Type:        "Full-time",
-		Salary:      "50k-60k",
-		Deadline:    time.Now().Add(7 * 24 * time.Hour),
+	job := Job{
+		Title:        "Test Job",
+		Company:      "Test Company",
+		Location:     "Test Location",
+		JobType:      "full-time",
+		Salary:       "50k-60k",
+		Description:  "This is a detailed job description with more than 50 characters.",
+		Requirements: []string{"Bachelor's Degree", "2+ years experience"},
+		Deadline:     time.Now().Add(7 * 24 * time.Hour),
 	}
 
 	//resp, err = makeRequest(t, "POST", baseURL+"/jobs", token, job)
@@ -544,3 +616,225 @@ func TestUnauthorizedAccess(t *testing.T) {
 	}
 	t.Log("✅ Job posting correctly forbidden for student")
 }
+
+/**
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"net/http"
+	"os"
+	"testing"
+	"time"
+)
+
+type User struct {
+	Name           string `json:"name"`
+	Email          string `json:"email"`
+	Password       string `json:"password"`
+	Role           string `json:"role"`
+	GraduationYear int    `json:"graduation_year"`
+}
+
+type LoginResponse struct {
+	Message      string `json:"message"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	User         struct {
+		ID    string `json:"id"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+		Role  string `json:"role"`
+	} `json:"user"`
+}
+
+type Project struct {
+	Title       string   `json:"title"`
+	Description string   `json:"description"`
+	TechStack   []string `json:"tech_stack"`
+	GitHubLink  string   `json:"github_link"`
+	ImageURL    string   `json:"image_url"`
+}
+
+type Job struct {
+	Title       string    `json:"title"`
+	Company     string    `json:"company"`
+	Description string    `json:"description"`
+	Location    string    `json:"location"`
+	Type        string    `json:"type"`
+	Salary      string    `json:"salary"`
+	Deadline    time.Time `json:"deadline"`
+	ImageURL    string    `json:"image_url"`
+}
+
+type Message struct {
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Content string `json:"content"`
+}
+
+type Gallery struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	ImageURL    string `json:"image_url"`
+}
+
+// =================== Helpers ===================
+
+func makeRequest(t *testing.T, method, url, token string, body interface{}) *http.Response {
+	var req *http.Request
+	var err error
+
+	if body != nil {
+		jsonBody, _ := json.Marshal(body)
+		req, err = http.NewRequest(method, url, bytes.NewBuffer(jsonBody))
+	} else {
+		req, err = http.NewRequest(method, url, nil)
+	}
+	if err != nil {
+		t.Fatalf("❌ Failed to create request: %v", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("❌ Request failed: %v", err)
+	}
+	return resp
+}
+
+func ensureUserExists(t *testing.T, baseURL string, user User) string {
+	token := login(t, baseURL, user.Email, user.Password)
+	if token != "" {
+		return token
+	}
+	_ = makeRequest(t, "POST", baseURL+"/auth/register", "", user)
+	verifyEmail(t, baseURL, user.Email)
+	return login(t, baseURL, user.Email, user.Password)
+}
+
+func login(t *testing.T, baseURL, email, password string) string {
+	data := map[string]string{"email": email, "password": password}
+	resp := makeRequest(t, "POST", baseURL+"/auth/login", "", data)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("❌ Login failed: %s", body)
+	}
+
+	var loginResp LoginResponse
+	_ = json.NewDecoder(resp.Body).Decode(&loginResp)
+	return loginResp.AccessToken
+}
+
+func verifyEmail(t *testing.T, baseURL, email string) {
+	data := map[string]string{"email": email, "otp": "123456"}
+	resp := makeRequest(t, "POST", baseURL+"/auth/verify-otp", "", data)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("❌ Email verification failed: %s", body)
+	}
+}
+
+// =================== Tests ===================
+
+func TestRoles(t *testing.T) {
+	baseURL := os.Getenv("API_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
+	}
+
+	t.Run("Student", func(t *testing.T) {
+		user := User{
+			Name: "Student", Email: "thekingofmyqueenxyz143@gmail.com",
+			Password: "Test123!", Role: "student", GraduationYear: time.Now().Year() + 1,
+		}
+		token := ensureUserExists(t, baseURL, user)
+
+		project := Project{
+			Title: "Test Project", Description: "A Project",
+			TechStack: []string{"Go", "Fiber"}, GitHubLink: "https://github.com/test",
+			ImageURL: "https://img.com/sample.jpg",
+		}
+		resp := makeRequest(t, "POST", baseURL+"/projects/addproject", token, project)
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusCreated {
+			body, _ := io.ReadAll(resp.Body)
+			t.Fatalf("❌ Project upload failed: %s", body)
+		}
+
+		resp = makeRequest(t, "POST", baseURL+"/jobs/add", token, Job{
+			Title: "Test Job", Company: "ABC Corp", Description: "Job Desc",
+			Location: "Remote", Type: "Intern", Salary: "0", Deadline: time.Now().Add(24 * time.Hour),
+		})
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusForbidden {
+			body, _ := io.ReadAll(resp.Body)
+			t.Fatalf("❌ Job posting should be forbidden: %s", body)
+		}
+	})
+
+	t.Run("Alumni", func(t *testing.T) {
+		user := User{
+			Name: "Alumni", Email: "1da21et030.et@drait.edu.in",
+			Password: "Test123!", Role: "alumni", GraduationYear: time.Now().Year() - 1,
+		}
+		token := ensureUserExists(t, baseURL, user)
+
+		job := Job{
+			Title: "Test Job", Company: "Test Ltd", Description: "Job Desc",
+			Location: "BLR", Type: "Full-time", Salary: "5LPA", Deadline: time.Now().AddDate(0, 0, 7),
+		}
+		resp := makeRequest(t, "POST", baseURL+"/jobs/add", token, job)
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusCreated {
+			body, _ := io.ReadAll(resp.Body)
+			t.Fatalf("❌ Alumni job post failed: %s", body)
+		}
+	})
+
+	t.Run("Faculty", func(t *testing.T) {
+		user := User{
+			Name: "Faculty", Email: "parshwanathparamagond1234@gmail.com",
+			Password: "Test123!", Role: "faculty", GraduationYear: 2018,
+		}
+		token := ensureUserExists(t, baseURL, user)
+
+		resp := makeRequest(t, "GET", baseURL+"/projects", token, nil)
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			t.Fatalf("❌ Faculty project view failed: %s", body)
+		}
+
+		message := Message{
+			To: "thekingofmyqueenxyz143@gmail.com", Subject: "Project", Content: "Nice work!",
+		}
+		resp = makeRequest(t, "POST", baseURL+"/messages/sendmessage", token, message)
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusCreated {
+			body, _ := io.ReadAll(resp.Body)
+			t.Fatalf("❌ Faculty message send failed: %s", body)
+		}
+	})
+
+	t.Run("Unauthorized Admin Access", func(t *testing.T) {
+		token := login(t, baseURL, "thekingofmyqueenxyz143@gmail.com", "Test123!")
+
+		resp := makeRequest(t, "GET", baseURL+"/admin/users", token, nil)
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusForbidden {
+			body, _ := io.ReadAll(resp.Body)
+			t.Fatalf("❌ Student accessed admin route: %s", body)
+		}
+	})
+}
+**/

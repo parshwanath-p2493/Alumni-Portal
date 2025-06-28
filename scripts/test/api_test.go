@@ -18,26 +18,10 @@ type Event struct {
 	Location    string    `json:"location"`
 }
 
-// type Job struct {
-// 	Title       string    `json:"title"`
-// 	Company     string    `json:"company"`
-// 	Description string    `json:"description"`
-// 	Location    string    `json:"location"`
-// 	Type        string    `json:"type"`
-// 	Salary      string    `json:"salary"`
-// 	Deadline    time.Time `json:"deadline"`
-// }
-
 type Post struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }
-
-// type Gallery struct {
-// 	Title       string `json:"title"`
-// 	Description string `json:"description"`
-// 	ImageURL    string `json:"image_url"`
-// }
 
 func testRoute(client *http.Client, method, url string, token string, body interface{}) error {
 	var req *http.Request
@@ -86,7 +70,7 @@ func TestAllRoutes(t *testing.T) {
 	// LOGIN
 	loginData := map[string]string{
 		"email":    "admin@alumni-portal.com",
-		"password": "admin123",
+		"password": "admin@eteportal2025",
 	}
 	var loginResp LoginResponse
 	loginJSON, _ := json.Marshal(loginData)
@@ -124,7 +108,7 @@ func TestAllRoutes(t *testing.T) {
 		{"Get Jobs", "GET", "/jobs/", true, nil},
 		{"Create Job", "POST", "/jobs/add", true, Job{
 			Title: "Test Job", Company: "Test Ltd", Description: "Job Desc",
-			Location: "Bangalore", Type: "Intern", Salary: "0", Deadline: time.Now().AddDate(0, 0, 7),
+			Location: "Bangalore", JobType: "Intern", Salary: "0", Deadline: time.Now().AddDate(0, 0, 7),
 		}},
 
 		// ✅ EVENTS
@@ -160,7 +144,7 @@ func TestAllRoutes(t *testing.T) {
 	for _, route := range routes {
 		token := ""
 		if route.token {
-			token = loginResp.AccessToken
+			token = loginResp.Data.AccessToken
 		}
 
 		err := testRoute(client, route.method, baseURL+route.path, token, route.body)

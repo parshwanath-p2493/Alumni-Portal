@@ -52,7 +52,7 @@ func GetConfig() *Config {
 		MaxFileSize:       maxFileSize,
 		AllowedImageTypes: []string{"image/jpeg", "image/png", "image/gif", "image/webp"},
 		FrontendURL:       getEnv("FRONTEND_URL", "http://localhost:3000"),
-		Environment:       getEnv("ENVIRONMENT", "development"),
+		Environment:       getEnv("ENVIRONMENT", "test"),
 	}
 }
 

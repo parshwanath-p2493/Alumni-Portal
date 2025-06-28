@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"log"
+	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -148,6 +149,114 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	})
 }
 
+/*
+*
+
+	func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
+		var req models.OTPVerificationRequest
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error":   true,
+				"message": "Invalid request body",
+			})
+		}
+
+		if err := utils.ValidateStruct(req); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error":   true,
+				"message": err.Error(),
+			})
+		}
+
+		// Find and validate OTP
+		otpCollection := config.GetCollection("otp_verifications")
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		var otpDoc models.OTPVerification
+		filter := bson.M{
+			"email":      req.Email,
+			"otp_code":   req.OTP,
+			"is_used":    false,
+			"expires_at": bson.M{"$gt": time.Now()},
+		}
+
+		err := otpCollection.FindOne(ctx, filter).Decode(&otpDoc)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error":   true,
+				"message": "Invalid or expired OTP",
+			})
+		}
+
+		// Mark OTP as used
+		_, err = otpCollection.UpdateOne(ctx, bson.M{"_id": otpDoc.ID}, bson.M{
+			"$set": bson.M{"is_used": true},
+		})
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   true,
+				"message": "Failed to update OTP status",
+			})
+		}
+
+		// Verify user
+		userCollection := config.GetCollection("users")
+		var user models.User
+		err = userCollection.FindOneAndUpdate(
+			ctx,
+			bson.M{"email": req.Email},
+			bson.M{"$set": bson.M{"is_verified": true, "updated_at": time.Now()}},
+		).Decode(&user)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   true,
+				"message": "Failed to verify user",
+			})
+		}
+
+		// Generate tokens
+		accessToken, refreshToken, err := utils.GenerateTokens(&user)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   true,
+				"message": "Failed to generate tokens",
+			})
+		}
+
+		// Store refresh token
+		tokenHash := sha256.Sum256([]byte(refreshToken))
+		refreshTokenDoc := models.RefreshToken{
+			ID:        primitive.NewObjectID(),
+			UserID:    user.ID,
+			TokenHash: hex.EncodeToString(tokenHash[:]),
+			ExpiresAt: time.Now().Add(config.GetConfig().RefreshExpiration),
+			IsRevoked: false,
+			CreatedAt: time.Now(),
+		}
+
+		refreshCollection := config.GetCollection("refresh_tokens")
+		_, err = refreshCollection.InsertOne(ctx, refreshTokenDoc)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   true,
+				"message": "Failed to store refresh token",
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"error":   false,
+			"message": "Email verified successfully",
+			"data": fiber.Map{
+				"user":          user.ToResponse(),
+				"access_token":  accessToken,
+				"refresh_token": refreshToken,
+			},
+		})
+	}
+
+*
+*/
 func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 	var req models.OTPVerificationRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -164,10 +273,69 @@ func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 		})
 	}
 
-	// Find and validate OTP
-	otpCollection := config.GetCollection("otp_verifications")
+	cfg := config.GetConfig()
+	userCollection := config.GetCollection("users")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	// ✅ TEST ENVIRONMENT: bypass real OTP check
+	if os.Getenv("ENVIRONMENT") == "test" && req.OTP == "123456" {
+		// Mark user as verified
+		var user models.User
+		err := userCollection.FindOneAndUpdate(
+			ctx,
+			bson.M{"email": req.Email},
+			bson.M{"$set": bson.M{"is_verified": true, "updated_at": time.Now()}},
+		).Decode(&user)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   true,
+				"message": "Failed to mock verify user",
+			})
+		}
+
+		// Generate tokens
+		accessToken, refreshToken, err := utils.GenerateTokens(&user)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   true,
+				"message": "Failed to generate tokens",
+			})
+		}
+
+		// Store refresh token
+		tokenHash := sha256.Sum256([]byte(refreshToken))
+		refreshCollection := config.GetCollection("refresh_tokens")
+		refreshTokenDoc := models.RefreshToken{
+			ID:        primitive.NewObjectID(),
+			UserID:    user.ID,
+			TokenHash: hex.EncodeToString(tokenHash[:]),
+			ExpiresAt: time.Now().Add(cfg.RefreshExpiration),
+			IsRevoked: false,
+			CreatedAt: time.Now(),
+		}
+
+		_, err = refreshCollection.InsertOne(ctx, refreshTokenDoc)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error":   true,
+				"message": "Failed to store refresh token",
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"error":   false,
+			"message": "✅ Test email verified successfully",
+			"data": fiber.Map{
+				"user":          user.ToResponse(),
+				"access_token":  accessToken,
+				"refresh_token": refreshToken,
+			},
+		})
+	}
+
+	// Normal OTP flow (non-test environment or real OTP)
+	otpCollection := config.GetCollection("otp_verifications")
 
 	var otpDoc models.OTPVerification
 	filter := bson.M{
@@ -196,8 +364,7 @@ func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 		})
 	}
 
-	// Verify user
-	userCollection := config.GetCollection("users")
+	// Mark user as verified
 	var user models.User
 	err = userCollection.FindOneAndUpdate(
 		ctx,
@@ -222,16 +389,16 @@ func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 
 	// Store refresh token
 	tokenHash := sha256.Sum256([]byte(refreshToken))
+	refreshCollection := config.GetCollection("refresh_tokens")
 	refreshTokenDoc := models.RefreshToken{
 		ID:        primitive.NewObjectID(),
 		UserID:    user.ID,
 		TokenHash: hex.EncodeToString(tokenHash[:]),
-		ExpiresAt: time.Now().Add(config.GetConfig().RefreshExpiration),
+		ExpiresAt: time.Now().Add(cfg.RefreshExpiration),
 		IsRevoked: false,
 		CreatedAt: time.Now(),
 	}
 
-	refreshCollection := config.GetCollection("refresh_tokens")
 	_, err = refreshCollection.InsertOne(ctx, refreshTokenDoc)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
