@@ -207,11 +207,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
 
-// Common structs matching your backend models
+// Common structs matching your backend models exactly
 type User struct {
 	Name           string   `json:"name"`
 	Email          string   `json:"email"`
@@ -250,16 +251,18 @@ type LoginResponse struct {
 	Error   bool   `json:"error"`
 }
 
+// Project struct matching backend validation
 type Project struct {
 	Title        string   `json:"title"`
 	Description  string   `json:"description"`
-	Type         string   `json:"type"`
+	ProjectType  string   `json:"project_type"` // Changed from Type to ProjectType
 	Technologies []string `json:"technologies"`
 	GitHubURL    string   `json:"github_url,omitempty"`
 	ImageURL     string   `json:"image_url,omitempty"`
 	DemoURL      string   `json:"demo_url,omitempty"`
 }
 
+// Job struct matching backend validation exactly
 type Job struct {
 	Title              string    `json:"title"`
 	Company            string    `json:"company"`
@@ -270,7 +273,6 @@ type Job struct {
 	Description        string    `json:"description"`
 	Requirements       []string  `json:"requirements"`
 	ExpiresAt          time.Time `json:"expires_at"`
-	ImageURL           string    `json:"image_url,omitempty"`
 }
 
 type Event struct {
@@ -300,8 +302,14 @@ func makeRequest(_ *testing.T, method, url string, token string, body interface{
 			return nil, fmt.Errorf("failed to marshal request body: %v", err)
 		}
 		req, err = http.NewRequest(method, url, bytes.NewBuffer(jsonBody))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %v", err)
+		}
 	} else {
 		req, err = http.NewRequest(method, url, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %v", err)
+		}
 	}
 
 	if err != nil {
@@ -399,12 +407,24 @@ func loginUser(t *testing.T, baseURL string, email, password string) string {
 	return loginResp.Data.AccessToken
 }
 
-func EnsureUserExists(t *testing.T, baseURL string, user User) string {
+func ensureUserExists(t *testing.T, baseURL string, user User) string {
 	// Try logging in first
-	token := loginUser(t, baseURL, user.Email, user.Password)
-	if token != "" {
-		t.Logf("ℹ️ User %s already exists, using existing credentials", user.Email)
-		return token
+	loginData := map[string]string{
+		"email":    user.Email,
+		"password": user.Password,
+	}
+
+	resp, err := makeRequest(t, "POST", baseURL+"/auth/login", "", loginData)
+	if err == nil {
+		defer resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
+			var loginResp LoginResponse
+			if err := json.Unmarshal(body, &loginResp); err == nil && loginResp.Data.AccessToken != "" {
+				t.Logf("ℹ️ User %s already exists, using existing credentials", user.Email)
+				return loginResp.Data.AccessToken
+			}
+		}
 	}
 
 	// Register if login failed
@@ -422,7 +442,7 @@ func TestStudentRole(t *testing.T) {
 
 	student := User{
 		Name:           "Test Student",
-		Email:          "student@test.com",
+		Email:          "thekingofmyqueenxyz143@gmail.com",
 		Password:       "Test123!",
 		Role:           "student",
 		StudentID:      "ETE2025001",
@@ -433,16 +453,14 @@ func TestStudentRole(t *testing.T) {
 	}
 
 	// Register and login
-	registerUser(t, baseURL, student)
-	verifyEmail(t, baseURL, student.Email)
-	token := loginUser(t, baseURL, student.Email, student.Password)
+	token := ensureUserExists(t, baseURL, student)
 
 	// Test project upload (should succeed)
 	t.Run("Student_Upload_Project", func(t *testing.T) {
 		project := Project{
 			Title:        "IoT Smart Home System",
-			Description:  "A comprehensive smart home automation system using IoT devices",
-			Type:         "major",
+			Description:  "A comprehensive smart home automation system using IoT devices and sensors for monitoring and controlling various aspects of a home environment",
+			ProjectType:  "major", // Fixed: using correct field name
 			Technologies: []string{"Arduino", "React", "Node.js", "MongoDB"},
 			GitHubURL:    "https://github.com/teststudent/smart-home",
 			DemoURL:      "https://smart-home-demo.com",
@@ -485,7 +503,7 @@ func TestStudentRole(t *testing.T) {
 			JobType:            "full-time",
 			ExperienceRequired: "0-2 years",
 			SalaryRange:        "₹6-10 LPA",
-			Description:        "We are looking for a passionate Software Engineer to join our team.",
+			Description:        "We are looking for a passionate Software Engineer to join our team and work on exciting projects that will shape the future of technology.",
 			Requirements:       []string{"React.js", "Node.js", "MongoDB"},
 			ExpiresAt:          time.Now().Add(30 * 24 * time.Hour),
 		}
@@ -520,7 +538,7 @@ func TestStudentRole(t *testing.T) {
 
 	// Test viewing gallery (should succeed)
 	t.Run("Student_View_Gallery", func(t *testing.T) {
-		resp, err := makeRequest(t, "GET", baseURL+"/gallery/items", token, nil)
+		resp, err := makeRequest(t, "GET", baseURL+"/gallery", token, nil)
 		if err != nil {
 			t.Fatalf("❌ Failed to view gallery: %v", err)
 		}
@@ -558,7 +576,7 @@ func TestAlumniRole(t *testing.T) {
 
 	alumni := User{
 		Name:           "Test Alumni",
-		Email:          "alumni@test.com",
+		Email:          "rahulroshu2003@gmail.com",
 		Password:       "Test123!",
 		Role:           "alumni",
 		StudentID:      "ETE2020001",
@@ -572,9 +590,7 @@ func TestAlumniRole(t *testing.T) {
 	}
 
 	// Register and login
-	registerUser(t, baseURL, alumni)
-	verifyEmail(t, baseURL, alumni.Email)
-	token := loginUser(t, baseURL, alumni.Email, alumni.Password)
+	token := ensureUserExists(t, baseURL, alumni)
 
 	// Test job posting (should succeed)
 	t.Run("Alumni_Post_Job", func(t *testing.T) {
@@ -585,7 +601,7 @@ func TestAlumniRole(t *testing.T) {
 			JobType:            "full-time",
 			ExperienceRequired: "2-5 years",
 			SalaryRange:        "₹12-18 LPA",
-			Description:        "We are looking for an experienced Full Stack Developer to join our growing team.",
+			Description:        "We are looking for an experienced Full Stack Developer to join our growing team and work on cutting-edge web applications that serve millions of users worldwide.",
 			Requirements:       []string{"React.js", "Node.js", "PostgreSQL", "AWS"},
 			ExpiresAt:          time.Now().Add(30 * 24 * time.Hour),
 		}
@@ -665,7 +681,7 @@ func TestFacultyRole(t *testing.T) {
 
 	faculty := User{
 		Name:        "Test Faculty",
-		Email:       "faculty@test.com",
+		Email:       "parshwanathparamagond1234@gmail.com",
 		Password:    "Test123!",
 		Role:        "faculty",
 		Position:    "Associate Professor",
@@ -676,9 +692,7 @@ func TestFacultyRole(t *testing.T) {
 	}
 
 	// Register and login
-	registerUser(t, baseURL, faculty)
-	verifyEmail(t, baseURL, faculty.Email)
-	token := loginUser(t, baseURL, faculty.Email, faculty.Password)
+	token := ensureUserExists(t, baseURL, faculty)
 
 	// Test viewing student projects (should succeed)
 	t.Run("Faculty_View_Projects", func(t *testing.T) {
@@ -695,8 +709,8 @@ func TestFacultyRole(t *testing.T) {
 		t.Log("✅ Faculty view projects successful")
 	})
 
-	// Test creating event (should succeed)
-	t.Run("Faculty_Create_Event", func(t *testing.T) {
+	// Test creating event (should succeed for admin only, so this should fail)
+	t.Run("Faculty_Create_Event_Should_Fail", func(t *testing.T) {
 		event := Event{
 			Title:       "Tech Fest 2024",
 			Description: "Annual technical festival showcasing student innovations",
@@ -708,15 +722,15 @@ func TestFacultyRole(t *testing.T) {
 
 		resp, err := makeRequest(t, "POST", baseURL+"/events", token, event)
 		if err != nil {
-			t.Fatalf("❌ Failed to create event: %v", err)
+			t.Fatalf("❌ Failed to attempt event creation: %v", err)
 		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode != http.StatusCreated {
+		if resp.StatusCode != http.StatusForbidden {
 			body, _ := io.ReadAll(resp.Body)
-			t.Fatalf("❌ Event creation failed with status %d: %s", resp.StatusCode, string(body))
+			t.Fatalf("❌ Event creation should be forbidden for faculty, got status %d: %s", resp.StatusCode, string(body))
 		}
-		t.Log("✅ Faculty event creation successful")
+		t.Log("✅ Event creation correctly forbidden for faculty")
 	})
 
 	// Test sending message to student (should succeed)
@@ -744,12 +758,13 @@ func TestFacultyRole(t *testing.T) {
 	// Test posting job (should fail - unauthorized)
 	t.Run("Faculty_Post_Job_Should_Fail", func(t *testing.T) {
 		job := Job{
-			Title:       "Research Assistant",
-			Company:     "University",
-			Location:    "Campus",
-			JobType:     "part-time",
-			Description: "Research assistant position available",
-			ExpiresAt:   time.Now().Add(30 * 24 * time.Hour),
+			Title:        "Research Assistant",
+			Company:      "University",
+			Location:     "Campus",
+			JobType:      "part-time",
+			Description:  "Research assistant position available for students interested in advanced signal processing and machine learning research projects.",
+			Requirements: []string{"Python", "MATLAB", "Research Experience"},
+			ExpiresAt:    time.Now().Add(30 * 24 * time.Hour),
 		}
 
 		resp, err := makeRequest(t, "POST", baseURL+"/jobs/add", token, job)
@@ -788,16 +803,15 @@ func TestAdminRole(t *testing.T) {
 
 	t.Log("👑 Testing Admin Role Functionality")
 
+	// Use existing admin credentials
 	admin := User{
-		Name:     "Super Admin",
-		Email:    "admin@test.com",
-		Password: "Admin123!",
-		Role:     "admin",
+		//Name:     "Super Admin",
+		Email:    "admin@alumni-portal.com",
+		Password: "admin@eteportal2025",
+		//Role:     "admin", // This should be valid according to your backend
 	}
 
-	// Register and login
-	registerUser(t, baseURL, admin)
-	verifyEmail(t, baseURL, admin.Email)
+	// Try to login with existing admin
 	token := loginUser(t, baseURL, admin.Email, admin.Password)
 
 	// Test getting all users (should succeed)
@@ -845,34 +859,28 @@ func TestAdminRole(t *testing.T) {
 		t.Log("✅ Admin get email settings successful")
 	})
 
-	// Test updating user status (should succeed)
-	t.Run("Admin_Update_User_Status", func(t *testing.T) {
-		// First get a user ID
-		resp, err := makeRequest(t, "GET", baseURL+"/admin/users", token, nil)
+	// Test creating event (should succeed for admin)
+	t.Run("Admin_Create_Event", func(t *testing.T) {
+		event := Event{
+			Title:       "Alumni Meet 2024",
+			Description: "Annual alumni gathering and networking event",
+			Location:    "Main Auditorium",
+			EventDate:   time.Now().Add(30 * 24 * time.Hour),
+			EventType:   "networking",
+			MaxCapacity: 200,
+		}
+
+		resp, err := makeRequest(t, "POST", baseURL+"/events", token, event)
 		if err != nil {
-			t.Fatalf("❌ Failed to get users for status update test: %v", err)
+			t.Fatalf("❌ Failed to create event: %v", err)
 		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode == http.StatusOK {
-			// Try to update a user status (this might fail if no users exist, which is okay)
-			updateData := map[string]bool{
-				"is_active": true,
-			}
-
-			resp, err := makeRequest(t, "PUT", baseURL+"/admin/users/test_user_id/status", token, updateData)
-			if err != nil {
-				t.Fatalf("❌ Failed to attempt user status update: %v", err)
-			}
-			defer resp.Body.Close()
-
-			// Accept both success and not found (if user doesn't exist)
-			if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
-				body, _ := io.ReadAll(resp.Body)
-				t.Fatalf("❌ User status update failed with status %d: %s", resp.StatusCode, string(body))
-			}
-			t.Log("✅ Admin user status update test completed")
+		if resp.StatusCode != http.StatusCreated {
+			body, _ := io.ReadAll(resp.Body)
+			t.Fatalf("❌ Event creation failed with status %d: %s", resp.StatusCode, string(body))
 		}
+		t.Log("✅ Admin event creation successful")
 	})
 }
 
@@ -928,7 +936,7 @@ func TestAuthenticationAndAuthorization(t *testing.T) {
 	t.Run("Password_Reset_Flow", func(t *testing.T) {
 		// Test forgot password
 		forgotData := map[string]string{
-			"email": "student@test.com",
+			"email": "thekingofmyqueenxyz143@gmail.com",
 		}
 
 		resp, err := makeRequest(t, "POST", baseURL+"/auth/forgot-password", "", forgotData)
@@ -974,37 +982,33 @@ func TestCrossRoleInteractions(t *testing.T) {
 	// Create users for interaction testing
 	student := User{
 		Name:     "Interaction Student",
-		Email:    "interaction.student@test.com",
+		Email:    "bahudharwad@gmail.com",
 		Password: "Test123!",
 		Role:     "student",
 	}
 
 	alumni := User{
 		Name:     "Interaction Alumni",
-		Email:    "interaction.alumni@test.com",
+		Email:    "1da21et030.et@drait.edu.in",
 		Password: "Test123!",
 		Role:     "alumni",
 	}
 
 	// Register users
-	registerUser(t, baseURL, student)
-	verifyEmail(t, baseURL, student.Email)
-	studentToken := loginUser(t, baseURL, student.Email, student.Password)
-
-	registerUser(t, baseURL, alumni)
-	verifyEmail(t, baseURL, alumni.Email)
-	alumniToken := loginUser(t, baseURL, alumni.Email, alumni.Password)
+	studentToken := ensureUserExists(t, baseURL, student)
+	alumniToken := ensureUserExists(t, baseURL, alumni)
 
 	// Test alumni posting job and student viewing it
 	t.Run("Alumni_Post_Job_Student_View", func(t *testing.T) {
 		// Alumni posts job
 		job := Job{
-			Title:       "Junior Developer",
-			Company:     "Interaction Corp",
-			Location:    "Remote",
-			JobType:     "full-time",
-			Description: "Entry level position for fresh graduates",
-			ExpiresAt:   time.Now().Add(30 * 24 * time.Hour),
+			Title:        "Junior Developer",
+			Company:      "Interaction Corp",
+			Location:     "Remote",
+			JobType:      "full-time",
+			Description:  "Entry level position for fresh graduates looking to start their career in software development with comprehensive training and mentorship programs.",
+			Requirements: []string{"Bachelor's Degree", "Basic Programming Knowledge", "Willingness to Learn"},
+			ExpiresAt:    time.Now().Add(30 * 24 * time.Hour),
 		}
 
 		resp, err := makeRequest(t, "POST", baseURL+"/jobs/add", alumniToken, job)
@@ -1062,12 +1066,12 @@ func TestCrossRoleInteractions(t *testing.T) {
 // Main test runner
 func TestMain(m *testing.M) {
 	fmt.Println("🚀 Starting ETE Alumni Portal Role-Based Testing")
-	//fmt.Println("=" * 60)
+	fmt.Println(strings.Repeat("=", 60))
 
 	// Run all tests
 	code := m.Run()
 
-	//fmt.Println("=" * 60)
+	fmt.Println(strings.Repeat("=", 60))
 	if code == 0 {
 		fmt.Println("✅ All tests completed successfully!")
 	} else {
