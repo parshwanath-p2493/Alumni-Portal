@@ -407,7 +407,7 @@ func loginUser(t *testing.T, baseURL string, email, password string) string {
 	return loginResp.Data.AccessToken
 }
 
-func ensureUserExists(t *testing.T, baseURL string, user User) string {
+func EnsureUserExists(t *testing.T, baseURL string, user User) string {
 	// Try logging in first
 	loginData := map[string]string{
 		"email":    user.Email,
@@ -453,7 +453,7 @@ func TestStudentRole(t *testing.T) {
 	}
 
 	// Register and login
-	token := ensureUserExists(t, baseURL, student)
+	token := EnsureUserExists(t, baseURL, student)
 
 	// Test project upload (should succeed)
 	t.Run("Student_Upload_Project", func(t *testing.T) {
@@ -538,7 +538,7 @@ func TestStudentRole(t *testing.T) {
 
 	// Test viewing gallery (should succeed)
 	t.Run("Student_View_Gallery", func(t *testing.T) {
-		resp, err := makeRequest(t, "GET", baseURL+"/gallery", token, nil)
+		resp, err := makeRequest(t, "GET", baseURL+"/gallery/items", token, nil)
 		if err != nil {
 			t.Fatalf("❌ Failed to view gallery: %v", err)
 		}
@@ -590,7 +590,7 @@ func TestAlumniRole(t *testing.T) {
 	}
 
 	// Register and login
-	token := ensureUserExists(t, baseURL, alumni)
+	token := EnsureUserExists(t, baseURL, alumni)
 
 	// Test job posting (should succeed)
 	t.Run("Alumni_Post_Job", func(t *testing.T) {
@@ -692,7 +692,7 @@ func TestFacultyRole(t *testing.T) {
 	}
 
 	// Register and login
-	token := ensureUserExists(t, baseURL, faculty)
+	token := EnsureUserExists(t, baseURL, faculty)
 
 	// Test viewing student projects (should succeed)
 	t.Run("Faculty_View_Projects", func(t *testing.T) {
@@ -811,6 +811,8 @@ func TestAdminRole(t *testing.T) {
 		//Role:     "admin", // This should be valid according to your backend
 	}
 
+	// hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(admin.Password), bcrypt.DefaultCost)
+	// admin.Password = string(hashedPassword)
 	// Try to login with existing admin
 	token := loginUser(t, baseURL, admin.Email, admin.Password)
 
@@ -982,21 +984,21 @@ func TestCrossRoleInteractions(t *testing.T) {
 	// Create users for interaction testing
 	student := User{
 		Name:     "Interaction Student",
-		Email:    "bahudharwad@gmail.com",
+		Email:    "thekingofmyqueenxyz143@gmail.com",
 		Password: "Test123!",
 		Role:     "student",
 	}
 
 	alumni := User{
 		Name:     "Interaction Alumni",
-		Email:    "1da21et030.et@drait.edu.in",
+		Email:    "rahulroshu2003@gmail.com",
 		Password: "Test123!",
 		Role:     "alumni",
 	}
 
 	// Register users
-	studentToken := ensureUserExists(t, baseURL, student)
-	alumniToken := ensureUserExists(t, baseURL, alumni)
+	studentToken := EnsureUserExists(t, baseURL, student)
+	alumniToken := EnsureUserExists(t, baseURL, alumni)
 
 	// Test alumni posting job and student viewing it
 	t.Run("Alumni_Post_Job_Student_View", func(t *testing.T) {
@@ -1066,12 +1068,12 @@ func TestCrossRoleInteractions(t *testing.T) {
 // Main test runner
 func TestMain(m *testing.M) {
 	fmt.Println("🚀 Starting ETE Alumni Portal Role-Based Testing")
-	fmt.Println(strings.Repeat("=", 60))
+	fmt.Println(strings.Repeat("=", 100))
 
 	// Run all tests
 	code := m.Run()
 
-	fmt.Println(strings.Repeat("=", 60))
+	fmt.Println(strings.Repeat("=", 100))
 	if code == 0 {
 		fmt.Println("✅ All tests completed successfully!")
 	} else {
