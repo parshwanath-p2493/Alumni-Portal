@@ -62,7 +62,8 @@ export default function DirectoryPage() {
 
       try {
         const response = await api.users.getAll()
-        setUsers(response.data)
+        //setUsers(response.data)
+      setUsers(response.data.users)
       } catch (err) {
         console.error("Error fetching users:", err)
         setError("Failed to load users. Please try again later.")

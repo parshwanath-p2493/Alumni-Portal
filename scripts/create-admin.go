@@ -15,7 +15,7 @@ import (
 type User struct {
 	Name            string    `bson:"name"`
 	Email           string    `bson:"email"`
-	Password        string    `bson:"password"`
+	Password        string    `bson:"password_hash"`
 	Role            string    `bson:"role"`
 	IsEmailVerified bool      `bson:"is_email_verified"`
 	IsActive        bool      `bson:"is_active"`
