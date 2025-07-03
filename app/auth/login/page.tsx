@@ -47,7 +47,7 @@
 //         router.push("/dashboard")
 //       } else if (result.requiresOTP) {
 //         // User needs to verify email first
-//         localStorage.setItem("verificationEmail", email)
+//         sessionStorage.setItem("verificationEmail", email)
 //         router.push("/auth/verify-otp")
 //       }
 //     } catch (err: any) {
@@ -215,7 +215,7 @@ export default function LoginPage() {
         }, 500)
       } else if (result.requiresOTP) {
         console.log("📧 OTP verification required")
-        localStorage.setItem("verificationEmail", email)
+        sessionStorage.setItem("verificationEmail", email)
         router.push(`/auth/verify-otp?email=${encodeURIComponent(email)}&type=registration`)
       } else {
         console.log("❌ Login failed:", result.message)

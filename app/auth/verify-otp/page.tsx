@@ -22,8 +22,8 @@
 //   const { loginWithToken } = useAuth()
 
 //   useEffect(() => {
-//     // Retrieve email from localStorage
-//     const storedEmail = localStorage.getItem("verificationEmail")
+//     // Retrieve email from sessionStorage
+//     const storedEmail = sessionStorage.getItem("verificationEmail")
 //     if (!storedEmail) {
 //       setError("Email not found. Please register again.")
 //       return
@@ -44,9 +44,9 @@
 //     }
 
 //     try {
-//       const name = localStorage.getItem("registrationName")
-//       const password = localStorage.getItem("registrationPassword")
-//       const role = localStorage.getItem("registrationRole")
+//       const name = sessionStorage.getItem("registrationName")
+//       const password = sessionStorage.getItem("registrationPassword")
+//       const role = sessionStorage.getItem("registrationRole")
 
 //       if (!name || !password || !role) {
 //         throw new Error("Missing registration details. Please register again.")
@@ -66,7 +66,7 @@
 //       const user = data.user || data.data?.user
 //       if (token && user) {
 //         loginWithToken(token, user)
-//         localStorage.removeItem("verificationEmail")
+//         sessionStorage.removeItem("verificationEmail")
 //         router.push("/dashboard")
 //       } else {
 //         throw new Error("No token or user received from server.")
@@ -108,9 +108,9 @@
 
 //   //     // If backend returns a token:
 //   //     if (data.data?.access_token) {
-//   //       localStorage.setItem("token", data.data.access_token)
-//   //       // Clear the verification email from localStorage
-//   //       localStorage.removeItem("verificationEmail")
+//   //       sessionStorage.setItem("token", data.data.access_token)
+//   //       // Clear the verification email from sessionStorage
+//   //       sessionStorage.removeItem("verificationEmail")
 //   //     }
 
 //   //     // Redirect to dashboard
@@ -274,8 +274,8 @@ export default function VerifyOTPPage() {
     if (emailParam) {
       setEmail(emailParam)
     } else {
-      // Fallback to localStorage for registration flow
-      const storedEmail = localStorage.getItem("verificationEmail")
+      // Fallback to sessionStorage for registration flow
+      const storedEmail = sessionStorage.getItem("verificationEmail")
       if (storedEmail) {
         setEmail(storedEmail)
       }
@@ -315,7 +315,7 @@ export default function VerifyOTPPage() {
         const result = await verifyOTP(email, otp.trim())
 
         if (result.success) {
-          localStorage.removeItem("verificationEmail")
+          sessionStorage.removeItem("verificationEmail")
           router.push("/dashboard")
         } else {
           setError(result.message || "Invalid verification code. Please try again.")

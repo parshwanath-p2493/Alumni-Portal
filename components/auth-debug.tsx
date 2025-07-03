@@ -10,7 +10,7 @@ export function AuthDebug() {
 
   const checkCookies = () => {
     const cookieToken = Cookies.get("access_token")
-    const localUser = localStorage.getItem("user")
+    const localUser = sessionStorage.getItem("user")
 
     console.log("🍪 Cookie check:", {
       cookieToken: cookieToken ? cookieToken.substring(0, 20) + "..." : "None",
@@ -28,7 +28,7 @@ export function AuthDebug() {
 
   const clearAuth = () => {
     Cookies.remove("access_token")
-    localStorage.removeItem("user")
+    sessionStorage.removeItem("user")
     window.location.reload()
   }
 

@@ -205,7 +205,7 @@ export default function DashboardPage() {
         return [
           { label: "Post Project", href: "/projects/new", icon: Plus, color: "bg-green-500" },
           { label: "Browse Jobs", href: "/jobs", icon: Briefcase, color: "bg-blue-500" },
-          { label: "Find Alumni", href: "/users", icon: Users, color: "bg-purple-500" },
+          { label: "Find Alumni", href: "/directory", icon: Users, color: "bg-purple-500" },
           { label: "View Gallery", href: "/gallery", icon: ImageIcon, color: "bg-teal-500" },
           { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
           { label: "View Events", href: "/events", icon: Calendar, color: "bg-orange-500" },
@@ -218,7 +218,7 @@ export default function DashboardPage() {
           // { label: "View Gallery", href: "/gallery", icon: ImageIcon, color: "bg-teal-500" },
 
           { label: "Post Job", href: "/jobs/new", icon: Plus, color: "bg-green-500" },
-          { label: "View Students", href: "/users", icon: Users, color: "bg-blue-500" },
+          { label: "View Students", href: "/directory", icon: Users, color: "bg-blue-500" },
           { label: "Browse Projects", href: "/projects", icon: GraduationCap, color: "bg-purple-500" },
           { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
           { label: "View Events", href: "/events", icon: Calendar, color: "bg-orange-500" },
@@ -227,7 +227,7 @@ export default function DashboardPage() {
       case "faculty":
         return [
           { label: "Upload Photos", href: "/gallery/upload", icon: Plus, color: "bg-green-500" },
-          { label: "View Students", href: "/users", icon: Users, color: "bg-blue-500" },
+          { label: "View Students", href: "/directory", icon: Users, color: "bg-blue-500" },
           { label: "Browse Projects", href: "/projects", icon: GraduationCap, color: "bg-purple-500" },
           // { label: "Messages", href: "/messages", icon: MessageSquare, color: "bg-orange-500" },
           { label: "View Events", href: "/events", icon: Calendar, color: "bg-orange-500" },
@@ -539,7 +539,7 @@ export default function DashboardPage() {
 
               <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardContent className="p-6">
-                  <Link href="/users" className="block">
+                  <Link href="/directory" className="block">
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
                         <Users className="w-6 h-6 text-purple-600" />

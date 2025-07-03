@@ -7,7 +7,7 @@ export const login = async (email: string, password: string) => {
 
   return new Promise<{ success: boolean; requiresOTP?: boolean; message?: string }>((resolve, reject) => {
     const savedToken = Cookies.get("access_token")
-    const savedUser = localStorage.getItem("user")
+    const savedUser = sessionStorage.getItem("user")
 
     if (savedToken && savedUser) {
       resolve({ success: true, message: "Login successful" })

@@ -36,7 +36,7 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
       if (typeof window !== "undefined") {
         // Clear auth data
         document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-        localStorage.removeItem("user")
+        sessionStorage.removeItem("user")
         window.location.href = "/auth/login"
       }
       throw new Error("Authentication failed")
@@ -123,7 +123,7 @@ export const api = {
   users: {
     getProfile: () => fetchWithAuth("/users/profile"),
     updateProfile: (data: any) =>
-      fetchWithAuth("/users/profile", {
+      fetchWithAuth("/users/updateprofile", {
         method: "PUT",
         body: JSON.stringify(data),
       }),
@@ -133,7 +133,7 @@ export const api = {
   },
 
   // Project endpoints
-  projects: {
+  projects: { 
     getAll: (params = {}) => fetchWithAuth("/projects/projectview?" + new URLSearchParams(params as any).toString()),
     create: (data: any) =>
       fetchWithAuth("/projects/addproject", {

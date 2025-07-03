@@ -112,7 +112,7 @@
 
 //       if (result.success) {
 //         // Store email for OTP verification
-//         localStorage.setItem("verificationEmail", formData.email.trim())
+//         sessionStorage.setItem("verificationEmail", formData.email.trim())
 //         router.push(`/auth/verify-otp?email=${encodeURIComponent(formData.email.trim())}&type=registration`)
 //       } else {
 //         setError(result.message || "Registration failed. Please try again.")
@@ -502,7 +502,7 @@ export default function RegisterPage() {
         setError("")
 
         // Store email for OTP verification
-        localStorage.setItem("verificationEmail", formData.email)
+        sessionStorage.setItem("verificationEmail", formData.email)
 
         // Redirect to OTP verification
         setTimeout(() => {

@@ -87,7 +87,7 @@ export function GalleryUploadForm({ onUploadSuccess, onCancel }: UploadFormProps
       const response = await fetch("/upload/gallery", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${sessionStorage.getItem("token")}`,
         },
         body: formData,
       })

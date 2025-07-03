@@ -140,7 +140,7 @@
 //             if (profileData.user || profileData) {
 //               const userData = profileData.user || profileData
 //               setUser(userData)
-//               localStorage.setItem("user", JSON.stringify(userData))
+//               sessionStorage.setItem("user", JSON.stringify(userData))
 //             }
 //           } catch (error) {
 //             console.error("Failed to load user profile:", error)
@@ -194,7 +194,7 @@
 //           secure: process.env.NODE_ENV === "production",
 //           sameSite: "lax",
 //         })
-//         localStorage.setItem("user", JSON.stringify(userData))
+//         sessionStorage.setItem("user", JSON.stringify(userData))
 
 //         // Update state immediately
 //         setToken(token)
@@ -265,7 +265,7 @@
 //         const userData = data.user
 
 //         Cookies.set("access_token", token, { expires: 7 })
-//         localStorage.setItem("user", JSON.stringify(userData))
+//         sessionStorage.setItem("user", JSON.stringify(userData))
 
 //         setToken(token)
 //         setUser(userData)
@@ -282,14 +282,14 @@
 
 //   const loginWithToken = (token: string, userData: User) => {
 //     Cookies.set("access_token", token, { expires: 7 })
-//     localStorage.setItem("user", JSON.stringify(userData))
+//     sessionStorage.setItem("user", JSON.stringify(userData))
 //     setToken(token)
 //     setUser(userData)
 //   }
 
 //   const logout = () => {
 //     Cookies.remove("access_token")
-//     localStorage.removeItem("user")
+//     sessionStorage.removeItem("user")
 //     setToken(null)
 //     setUser(null)
 //   }
@@ -473,7 +473,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const loadUser = async () => {
       try {
         const savedToken = Cookies.get("access_token")
-        const savedUser = localStorage.getItem("user")
+        const savedUser = sessionStorage.getItem("user")
 
         console.log("🔄 Loading saved auth data:", {
           hasToken: !!savedToken,
@@ -493,7 +493,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch (parseError) {
             console.error("Failed to parse saved user data:", parseError)
             Cookies.remove("access_token")
-            localStorage.removeItem("user")
+            sessionStorage.removeItem("user")
           }
         } else if (savedToken) {
           setToken(savedToken)
@@ -506,7 +506,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (profileData.user || profileData.data?.user) {
               const userData = profileData.user || profileData.data?.user
               setUser(userData)
-              localStorage.setItem("user", JSON.stringify(userData))
+              sessionStorage.setItem("user", JSON.stringify(userData))
             }
           } catch (error) {
             console.error("Failed to load user profile:", error)
@@ -572,7 +572,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           secure: process.env.NODE_ENV === "production",
           sameSite: "lax",
         })
-        localStorage.setItem("user", JSON.stringify(userData))
+        sessionStorage.setItem("user", JSON.stringify(userData))
 
         // Update state immediately and synchronously
         setToken(token)
@@ -654,7 +654,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const userData = data.data.user
 
         Cookies.set("access_token", token, { expires: 7 })
-        localStorage.setItem("user", JSON.stringify(userData))
+        sessionStorage.setItem("user", JSON.stringify(userData))
 
         setToken(token)
         setUser(userData)
@@ -672,14 +672,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithToken = (token: string, userData: User) => {
     Cookies.set("access_token", token, { expires: 7 })
-    localStorage.setItem("user", JSON.stringify(userData))
+    sessionStorage.setItem("user", JSON.stringify(userData))
     setToken(token)
     setUser(userData)
   }
 
   const logout = () => {
     Cookies.remove("access_token")
-    localStorage.removeItem("user")
+    sessionStorage.removeItem("user")
     setToken(null)
     setUser(null)
   }
