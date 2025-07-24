@@ -29,6 +29,7 @@ type User struct {
 	Location       string             `json:"location,omitempty" bson:"location,omitempty"`
 	Experience     string             `json:"experience,omitempty" bson:"experience,omitempty"`
 	Skills         []string           `json:"skills,omitempty" bson:"skills,omitempty"`
+	Bio            string             `json:"bio,omitempty" bson:"bio,omitempty"`
 	GitHubURL      string             `json:"github_url,omitempty" bson:"github_url,omitempty" validate:"omitempty,url"`
 	LinkedInURL    string             `json:"linkedin_url,omitempty" bson:"linkedin_url,omitempty" validate:"omitempty,url"`
 	AvatarURL      string             `json:"avatar_url,omitempty" bson:"avatar_url,omitempty"`
@@ -75,14 +76,19 @@ type ResetPasswordRequest struct {
 }
 
 type UpdateProfileRequest struct {
-	Name        string   `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
-	Company     string   `json:"company,omitempty"`
-	Position    string   `json:"position,omitempty"`
-	Location    string   `json:"location,omitempty"`
-	Experience  string   `json:"experience,omitempty"`
-	Skills      []string `json:"skills,omitempty"`
-	GitHubURL   string   `json:"github_url,omitempty" validate:"omitempty,url"`
-	LinkedInURL string   `json:"linkedin_url,omitempty" validate:"omitempty,url"`
+	Name           string   `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
+	Company        string   `json:"company,omitempty"`
+	Position       string   `json:"position,omitempty"`
+	CGPA           float64  `json:"cgpa,omitempty"`
+	Experience     string   `json:"experience,omitempty"`
+	Location       string   `json:"location,omitempty"`
+	Skills         []string `json:"skills,omitempty"`
+	Bio            string   `json:"bio,omitempty"`
+	AvatarURL      string   `json:"avatar_url,omitempty" validate:"omitempty,url"`
+	StudentID      string   `json:"student_id,omitempty"`
+	GraduationYear int      `json:"graduation_year,omitempty" validate:"omitempty,min=2000,max=2030"`
+	GitHubURL      string   `json:"github_url,omitempty" validate:"omitempty,url"`
+	LinkedInURL    string   `json:"linkedin_url,omitempty" validate:"omitempty,url"`
 }
 
 type UserResponse struct {

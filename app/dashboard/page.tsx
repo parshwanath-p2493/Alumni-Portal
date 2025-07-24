@@ -327,13 +327,13 @@ export default function DashboardPage() {
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/users/updateprofile">
+                    <Link href="/profile">
                       <Settings className="w-4 h-4 mr-2" />
                       Profile Settings
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/notifications/inbox">
+                    <Link href="/notifications">
                       <Bell className="w-4 h-4 mr-2" />
                       Notifications
                     </Link>
@@ -455,7 +455,7 @@ export default function DashboardPage() {
                 </div>
 
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href="/users/updateprofile">Edit Profile</Link>
+                  <Link href="/profile">Edit Profile</Link>
                 </Button>
               </CardContent>
             </Card>
