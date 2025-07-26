@@ -1,4 +1,4 @@
-# 🎓 AlmaniPortal - Alumni Management System
+# 🎓 AlumniPortal - Alumni Management System
 
 A comprehensive full-stack web application for managing alumni networks, built for the Electronics and Telecommunication Department (ETE) at Dr. Ambedkar Institute of Technology, Bengaluru.
 
